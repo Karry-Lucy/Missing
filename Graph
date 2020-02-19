@@ -1,0 +1,305 @@
+#include<stdio.h>
+#include<stdlib.h>
+
+typedef struct {
+	int vexnum;
+	int arc[50][50];
+} Graph,*MGraph;
+
+typedef struct{
+	int vex;
+	int lowprice;
+	int sign;
+}close,*Close;
+
+typedef struct{
+	int degree;
+	int vex;
+}indegree,*Indegree;
+
+int *vex,*visit;
+
+void DFS(MGraph g,int v) {
+	vex[v] = 1;
+	printf("%d ",v);
+	for(int j = 0; j<g->vexnum; j++) {
+		if(g->arc[v][j] == 1&&!vex[j]) {
+			DFS(g,j);
+		}
+	}
+}
+
+void DFSTravel(MGraph g) {
+	vex = (int*)malloc(g->vexnum*sizeof(int));
+	for(int i = 0; i<g->vexnum; i++)
+		vex[i] = 0;
+	for(int i = 0; i<g->vexnum; i++) {
+		if(!vex[i])
+			DFS(g,i);
+	}
+}
+
+void BFS(MGraph g,int v0) {
+	visit = (int*)malloc(g->vexnum*sizeof(int));
+	for(int i = 0; i<g->vexnum; i++)
+		visit[i] = 0;
+	int *q;
+	q = (int*)malloc(g->vexnum*sizeof(int));
+	int front,rear;
+	front = rear = 0;
+	visit[v0] = 1;
+	q[rear] = v0;
+	rear++;
+	for(int i = 0; i<g->vexnum; i++) {
+		if(visit[i] == 0&&g->arc[v0][i] == 1) {
+			q[rear++] = i;
+			visit[i] = 1;
+			//	printf("%d ",visit[i]);
+			while(front!=rear) {
+				int p = q[front];
+				printf("%d ",q[front]);
+				front++;
+				for(int j = 0; j<g->vexnum; j++) {
+					if(visit[j] == 0&&g->arc[p][j] == 1) {
+						q[rear++] = j;
+						visit[j] = 1;
+					}
+				}
+			}
+		}
+	}
+}
+
+int minedge(Close p,int n){
+	int min = INT_MAX;
+	int k;
+	for(int i = 0;i<n;i++){
+		if(p[i].lowprice<min&&p[i].lowprice!=0&&p[i].sign == 0){
+			min = p[i].lowprice;
+			k = i;
+		}
+	}
+	return k;	
+}
+
+void Prime(MGraph g){
+	Close edge;
+	int count = 0;
+	edge = (Close)malloc(g->vexnum*sizeof(close));
+	for(int i = 0;i<g->vexnum;i++){
+		edge[i].vex = i;
+		edge[i].lowprice = INT_MAX;
+		edge[i].sign = 0;
+	}
+	for(int i = 0;i<g->vexnum;i++){
+		if(g->arc[0][i]!=INT_MAX){
+			edge[i].lowprice = g->arc[0][i];
+		}
+	}
+	edge[0].sign = 1;
+	for(int i = 1;i<g->vexnum;i++){
+		int k = minedge(edge,g->vexnum);
+	//	printf("%d ",k);
+		count = count+edge[k].lowprice;
+		edge[k].lowprice = 0;
+		edge[k].sign = 1;
+		for(int j = 0;j<g->vexnum;j++){
+			if(g->arc[k][j]<edge[j].lowprice){
+				edge[j].lowprice = g->arc[k][j];
+			}
+		}
+	}
+	printf("%d",count);
+}
+
+void TuopuSort(MGraph g){
+	Indegree In;
+	In = (Indegree)malloc(g->vexnum*sizeof(indegree));
+	for(int i = 0;i<g->vexnum;i++){
+		In[i].vex = i;
+		In[i].degree = 0;
+		for(int j = 0;j<g->vexnum;j++){
+			if(g->arc[j][i] == 1){
+				In[i].degree++;	
+			}	
+		}
+		printf("%d\n",In[i].degree);
+	}
+	int *stack,top = -1;
+	stack = (int*)malloc(g->vexnum*sizeof(int));
+	for(int i = 0;i<g->vexnum;i++){
+//		printf("%d\n",In[i].degree);
+		if(In[i].degree == 0){
+			top++;
+			stack[top] = i;
+		}
+	}
+	while(top!=-1){
+		int k = stack[top];
+		top--;
+		printf("%d ",k);
+		for(int j = 0;j<g->vexnum;j++){
+			if(g->arc[k][j] == 1){
+				In[j].degree--;
+				if(In[j].degree == 0){
+					top++;
+					stack[top] = j;
+				}
+			}
+		}
+	}
+	printf("\n");
+	for(int i =0;i<g->vexnum;i++)
+		for(int j =0 ;j<g->vexnum;j++)
+			printf("%d ",g->arc[i][j]);
+}
+
+void Ppath(int *P,int i,int v0){
+	int k;
+	k = P[i];
+	if(k == v0) return ;
+	Ppath(P,k,v0);
+	printf("%d ",k);
+}
+ 
+void Dispath(int *D,int *P,int *F,int n,int v0){
+	for(int i = 0;i<n;i++){
+		if(i!=v0){
+			if(F[i] ==  1){
+				printf("从%d到%d的最短路径长度为：%d\t路径为：",v0,i,D[i]);
+				printf("%d,",v0);
+				Ppath(P,i,v0);
+				printf("%d\n",i);
+			}
+			else printf("从%d到%d不存在路径\n",v0,i);
+		}
+	}
+}
+
+void  Dijkstra(MGraph g,int v0){
+	int *D,*P,*F,w,min;
+	D = (int*)malloc(g->vexnum*sizeof(int));
+	P = (int*)malloc(g->vexnum*sizeof(int));
+	F = (int*)malloc(g->vexnum*sizeof(int));
+	for(int i = 0;i<g->vexnum;i++){
+		D[i] = g->arc[v0][i];
+		F[i] = 0;
+		if(D[i]!=INT_MAX) P[i] = v0;
+	}
+	F[v0] = 1;
+	for(int i = 0;i<g->vexnum;i++){
+		 min = INT_MAX;
+		 for(int j = 0;j<g->vexnum;j++){
+		 	if(!F[j]){
+		 		if(D[j]<min){
+		 			w = j;
+		 			min = D[j];
+				 }
+			 }
+		 }
+		 if(min!=INT_MAX) F[w] = 1;
+		 else break;
+		 for(int j = 0;j<g->vexnum;j++){
+		 	if (!F[j]&&g->arc[w][j]!=INT_MAX){
+		 		if(D[w]+g->arc[w][j]<D[j]){
+		 			D[j] = D[w]+g->arc[w][j];
+		 			P[j] = w;
+				 }
+			 }
+		 }
+	}
+	Dispath(D,P,F,g->vexnum,v0);
+}
+
+void Floyd(MGraph g){
+	int k,i,j;	
+	for(k = 0;k<g->vexnum;k++){
+		for(i = 0;i<g->vexnum;i++){
+			for(j = 0;j<g->vexnum;j++){
+				if(g->arc[i][j]>g->arc[i][k]+g->arc[k][j]){
+					g->arc[i][j] = g->arc[i][k]+g->arc[k][j];
+					//system("pause");
+				}
+			}
+		}
+	}	
+	for(i = 0;i<g->vexnum;i++){
+		for(j = 0;j<g->vexnum;j++){
+			if(i == j){
+				g->arc[i][j] = 0;
+			}
+			if(g->arc[i][j]>=100000)
+				g->arc[i][j] = -1;
+			printf("%d ",g->arc[i][j]);
+		}
+		printf("\n");
+	}
+}
+
+
+int main() {
+	MGraph G;
+	int v0;
+	G = (MGraph)malloc(sizeof(Graph));
+	scanf("%d",&G->vexnum);
+	scanf("%d",&v0);
+	for(int i = 0; i<G->vexnum; i++) {
+		for(int j = 0; j<G->vexnum; j++) {
+			scanf("%d",&G->arc[i][j]);
+			if(G->arc[i][j] == 0)
+				G->arc[i][j] = INT_MAX;
+		}
+	}
+//	DFSTravel(G);
+//	BFS(G,0);
+//	Prime(G);
+//	TuopuSort(G);
+	Dijkstra(G,v0);
+//	Floyd(G);
+	
+	return 0;
+}
+
+
+
+/*
+4
+0 0 0 1
+0 0 1 1
+0 1 0 1
+1 1 1 0
+6
+0 1 0 0 1 0
+1 0 1 1 0 0
+0 1 0 1 1 0
+0 1 1 0 1 0
+1 0 1 1 0 1
+0 0 0 0 1 0
+权值 
+4
+0 2 4 0
+2 0 3 5
+4 3 0 1
+0 5 1 0
+6
+0 8 9 0 0 0
+0 0 3 6 11 0
+0 0 0 10 4 0
+0 0 0 0 0 4
+0 0 0 0 0 7
+0 0 0 0 0 0
+拓扑序列 
+4
+0 1 0 0
+0 0 1 0
+0 0 0 0
+0 0 1 0
+最短路径 
+4 0
+0 3 0 1
+0 0 4 0
+2 0 0 0
+0 0 1 0
+
+*/
+
